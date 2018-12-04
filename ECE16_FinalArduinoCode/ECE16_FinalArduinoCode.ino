@@ -16,21 +16,32 @@ Adafruit_SSD1306 display(OLED_RESET);
 
 AltSoftSerial BTserial;
 
-int button = 4; // pin number
+int heartrate_pin = A2; //Pin of heartrate
+int motorPin = 3; //Pin for Button
+
+//button variables
+int button = 4; // button pin number
 int buttonstate;
 int last_buttonstate = HIGH; //button hasn't been pressed yet
 bool in_sleep = 0; 
 
+//MPU
 const int MPU_addr=0x68;  // I2C address of the MPU-6050, can be changed to 0x69
-
 MPU6050 IMU(MPU_addr);
 
+//Interupt Pin
 const int interruptPin = 2;
 volatile bool ipinReady = false;
 
-int16_t ax, ay, az, tp, gx, gy, gz;
-String s;
+String s; //String to Clear Buffer
 
+//IMU Variables
+int16_t ax, ay, az, tp, gx, gy, gz;
+
+//Variable for heartrate
+unsigned long int heartrate_val = 0; 
+
+//Sampling Variables 
 unsigned long int samplePeriod = 40000; // the target sample period, 5000 microseconds, 200Hz
 unsigned long int startTime = 0;
 unsigned long int elapsedTime = 0;
@@ -44,7 +55,7 @@ void interruptPinISR() {
   ipinReady = true;
 }
 
-void readIMU() {
+void readData() {
   //Serial.println("reading imu");
   Wire.beginTransmission(MPU_addr);
   Wire.write(0x3B);                    // starting with register 0x3B (ACCEL_XOUT_H)
@@ -64,6 +75,8 @@ void readIMU() {
   gx=Wire.read()<<8|Wire.read();  // 0x43 (GYRO_XOUT_H) & 0x44 (GYRO_XOUT_L)
   gy=Wire.read()<<8|Wire.read();  // 0x45 (GYRO_YOUT_H) & 0x46 (GYRO_YOUT_L)
   gz=Wire.read()<<8|Wire.read();  // 0x47 (GYRO_ZOUT_H) & 0x48 (GYRO_ZOUT_L)
+  
+  heartrate_val=analogRead(heartrate_pin);
 }
 
 void pollData() {
@@ -76,7 +89,7 @@ void pollData() {
       elapsedTime = (currentTime - startTime)/1e3;
       lastTime = currentTime;
 
-      readIMU();
+      readData();
       newRead = true;
     }
   }  
@@ -97,6 +110,8 @@ void sendData() {
   BTserial.print(gy);
   BTserial.print(' ');
   BTserial.print(gz);
+  BTserial.print(' ');
+  BTserial.print(heartrate_val);
   BTserial.println(' ');
 
 }
@@ -162,7 +177,13 @@ void awake (){
   }
 }
 void setup(){
+  
+  //Initialize Button Pin
   pinMode (button, INPUT);
+  
+  //Initialize Motor Pin
+  pinMode(motorPin, OUTPUT);
+  digitalWrite(motorPin, HIGH); 
 
   // Intialize the IMU and the DMP ont he IMU
   IMU.initialize();
