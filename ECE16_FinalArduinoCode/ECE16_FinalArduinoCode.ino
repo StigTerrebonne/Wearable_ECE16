@@ -55,6 +55,15 @@ void interruptPinISR() {
   ipinReady = true;
 }
 
+void printData(String buf) { 
+  display.clearDisplay();
+  display.setTextSize(1);
+  display.setTextColor(WHITE);
+  display.setCursor(0,0);
+  display.println(buf);
+  display.display();
+}
+
 void readData() {
   //Serial.println("reading imu");
   Wire.beginTransmission(MPU_addr);
@@ -76,9 +85,11 @@ void readData() {
   gy=Wire.read()<<8|Wire.read();  // 0x45 (GYRO_YOUT_H) & 0x46 (GYRO_YOUT_L)
   gz=Wire.read()<<8|Wire.read();  // 0x47 (GYRO_ZOUT_H) & 0x48 (GYRO_ZOUT_L)
   
+  //heart rate IR pin
   heartrate_val=analogRead(heartrate_pin);
 }
 
+//timer 
 void pollData() {
   //Serial.println("pollData");
   if (ipinReady && !newRead) {
@@ -95,8 +106,8 @@ void pollData() {
   }  
 }
 
+//send all data from IMU and IR
 void sendData() {
-  // Displays the raw value and the time it was sampled
   BTserial.print(elapsedTime);
   BTserial.print(' ');
   BTserial.print(ax);
@@ -163,17 +174,22 @@ void awake (){
   }
 
   if (BTserial.available() > 0) { 
-    //Serial.println("in second if in loop");
     String dataFromPython =  BTserial.readStringUntil('\n');
-   // Serial.print("Received: ");
-   // Serial.println(dataFromPython);
-
-     display.setTextSize(2);
-     display.setTextColor(WHITE);  
-     display.setCursor(0,0);
-     display.println(dataFromPython.toInt());
-     display.display();
-     display.clearDisplay();  
+    
+    //check if heartbeat is too low or high - ring motor
+    if (dataFromPython == 'q') { //might need to change q
+      printData("Your heart beat is too High or Low!");
+      digitalWrite(motorPin, LOW); 
+      delay(2000);
+      digitalWrite(motorPin, HIGH);
+    }
+    
+    //can add functionality here for our customizations 
+    
+    //if all is good, then print heartbeat and steps 
+    else {
+      printData(dataFromPython);
+    } 
   }
 }
 void setup(){
@@ -190,6 +206,7 @@ void setup(){
   IMU.dmpInitialize();
   IMU.setDMPEnabled(true);
 
+  // Initialize OLED
   display.begin(SSD1306_SWITCHCAPVCC, 0x3C);
   display.display();
   display.clearDisplay();
