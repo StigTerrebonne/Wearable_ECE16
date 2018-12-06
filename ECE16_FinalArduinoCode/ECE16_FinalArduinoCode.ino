@@ -42,7 +42,7 @@ int16_t ax, ay, az, tp, gx, gy, gz;
 unsigned long int heartrate_val = 0; 
 
 //Sampling Variables 
-unsigned long int samplePeriod = 40000; // the target sample period, 5000 microseconds, 200Hz
+unsigned long int samplePeriod = 20000; // the target sample period, 5000 microseconds, 200Hz
 unsigned long int startTime = 0;
 unsigned long int elapsedTime = 0;
 unsigned long int currentTime = 0;
@@ -110,12 +110,12 @@ void pollData() {
 void sendData() {
   BTserial.print(elapsedTime);
   BTserial.print(' ');
-  BTserial.print(ax);
-  BTserial.print(' ');
-  BTserial.print(ay);
-  BTserial.print(' ');
-  BTserial.print(az);
-  BTserial.print(' ');
+//  BTserial.print(ax);
+//  BTserial.print(' ');
+//  BTserial.print(ay);
+//  BTserial.print(' ');
+//  BTserial.print(az);
+//  BTserial.print(' ');
   BTserial.print(gx);
   BTserial.print(' ');
   BTserial.print(gy);
@@ -124,6 +124,7 @@ void sendData() {
   BTserial.print(' ');
   BTserial.print(heartrate_val);
   BTserial.println(' ');
+  //BTserial.print(',');
 
 }
 
