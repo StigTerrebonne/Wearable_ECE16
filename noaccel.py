@@ -11,9 +11,11 @@ from filtering4 import process_ir
 import time
 from matplotlib import pyplot as plt
 from matplotlib import animation
+from sklearn.mixture import GaussianMixture as GM
 
 # ==================== Globals ====================
-N = 32                                         # number of samples plotted
+N = 128 # number of samples plotted
+#N = 32
 NS = 10                                       # number of samples to read per iteration
 sample_count = 0                                # current sample count
 steps = 0 
@@ -156,6 +158,8 @@ def update_data(i): #i is needed for live plotting
     filtered_vals[3][N-NS:], filt_ICs[3] = process_ir(IR_Data[N-NS:], filt_coeffs, filt_ICs[3], 0)
     # grab new samples
     
+    heart_beat = predict(filtered_vals[3], times, gmm_fit) #calculate heartbeat!!
+
     samp4welch = N / (times[-1] - times[0])
     freqs, pwr = sig.welch(filtered_vals[0] + filtered_vals[1] + filtered_vals[2], samp4welch, nperseg = N) 
     idx = np.argmax(pwr)
@@ -175,6 +179,38 @@ def update_data(i): #i is needed for live plotting
 
     return #live_plot
 
+def train(data):
+    gmm = GM(n_components = 2)
+    gmm_fit = gmm.fit((data.reshape(-1, 1))   
+    return gmm_fit
+
+def predict(data, time, gmm_fit):
+    pred_lbl = gmm_fit.predict((data).reshape(-1, 1))
+    heart_beat = calculate_hr(time, pred_lbl)   
+    return(heart_beat)
+
+def calculate_hr(time, pred_lbl):
+    timeFinal = np.zeros(len(time))
+    i = 0
+    while i < len(time):
+        count = 0
+        index = i
+        while pred_lbl == 1:
+            count+=1
+            i+=1
+                
+        timeFinal[index] = count   
+        i+=1
+    
+    timeFinal[timeFinal < 7] = 0
+	
+    timeIndex = np.where(timeFinal != 0)[0]
+    timeVals = [time[i] for i in timeIndex]
+    timeBetween = [j-i for i, j in zip(timeVals[:-1], timeVals[1:])]
+    threeBeatAvg = [(j+i+k)/3 for i,j,k in zip(timeBetween[:-2], timeBetween[1:-1], timeBetween[2:])]
+    threeBeatAvg = [i * 60 for i in threeBeatAvg]
+	
+    return(sum(threeBeatAvg) / float(len(threeBeatAvg)))
 
 def build_filters():
     global f_samp, f_lo, f_hi, order, filt_coeffs, filt_ICs
@@ -221,6 +257,8 @@ if (__name__ == "__main__") :
         filtered_vals[1], filt_ICs[1] = process_ir(gyy, filt_coeffs, filt_ICs[1], 1)
         filtered_vals[2], filt_ICs[2] = process_ir(gyz, filt_coeffs, filt_ICs[2], 1)
         filtered_vals[3], filt_ICs[3] = process_ir(IR_Data, filt_coeffs, filt_ICs[3], 1)
+	
+	gmm_fit = train(filtered_vals[3]);
         
         samp4welch = N / (times[-1] - times[0])
         freqs, pwr = sig.welch(filtered_vals[0] + filtered_vals[1] + filtered_vals[2], samp4welch, nperseg = N) 
