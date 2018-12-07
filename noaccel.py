@@ -49,7 +49,7 @@ def setup ():
     ser.write("AT+RESET".encode('utf-8'))
     time.sleep(.5)
     
-    ser.write("AT+CON3403DE02C3F7".encode('utf-8'))
+    ser.write("AT+CON3403DE02C3F7".encode('utf-8')) #Stig: 'AT+CON4006A09500D0'
 
         
     time.sleep(.5)
@@ -64,7 +64,7 @@ def read_BLE( ser ):
 
 def connect ():  
     while (read_BLE(ser) != str(-1)):
-        ser.write("AT+CON3403DE02C3F7".encode('utf-8'))
+        ser.write("AT+CON3403DE02C3F7".encode('utf-8')) #Stig: 'AT+CON4006A09500D0'
         print("Stuck in reconnenction")
         time.sleep(.5)
     print("im out")
