@@ -5,6 +5,7 @@
 
 # ==================== Imports ====================
 import serial
+import pyrebase
 import numpy as np
 import scipy.signal as sig
 from filtering4 import process_ir
@@ -39,6 +40,28 @@ med_beat_length = 0
 avg_time_diff = 1
 
 HR=0
+
+config = {
+  "apiKey": "AIzaSyBCuJvm-DPjvS6P9TQ-sXhs01g76e9aWto",
+  "authDomain": "ece16-fall18.firebaseapp.com",
+  "databaseURL": "https://ece16-fall18.firebaseio.com",
+  "storageBucket": "ece16-fall18.appspot.com",
+}
+firebase = pyrebase.initialize_app(config)
+db = firebase.database()
+last_time = time.time()
+
+def write_to_pyrebase(teamID, hr, steps):
+    assert isinstance(teamID, str)
+    assert isinstance(hr, int)
+    assert isinstance(steps, int)
+    
+    global last_time
+    current_time = time.time()
+    if (current_time - last_time >= 0.5):
+        last_time = current_time
+        data = {"teamID": teamID, "hr": hr, "steps": steps, "timestamp": current_time}
+	db.child("readings").push(data)
 
 def setup ():
     ser.write("AT+IMME1".encode('utf-8'))
@@ -165,7 +188,11 @@ def update_data(i): #i is needed for live plotting
     idx = np.argmax(pwr)
     fmax = freqs [idx]
     f_steps = fmax * 2
-    if f_steps > 0.75 and f_steps < 4  and max(pwr) > 1e4:
+	
+    if heart_beat > 200 or heart_beat < 20:
+	ser.write(("q").encode('utf-8'))
+    
+    else if f_steps > 0.75 and f_steps < 4  and max(pwr) > 1e4:
         steps += f_steps * (times[-1] - times[-NS])
         
         if int(f_steps * (times[-1] - times[-NS])) != 0:
@@ -178,6 +205,8 @@ def update_data(i): #i is needed for live plotting
     axes.set_xlim(times[0],times[N-1])
     live_plot.set_data(times, filtered_vals[3])
 
+    write_to_pyrebase("CarneAsadaFries", heart_beat, steps):	
+	
     return live_plot
 
 def train(data):
