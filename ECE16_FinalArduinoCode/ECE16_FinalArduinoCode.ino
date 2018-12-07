@@ -191,8 +191,8 @@ void awake (){
     else {
       //split data for heart rate and step count
       int idx = dataFromPython.indexOf(","); //index to split string
-      String heart = dataFromPython.substring(0, idx);
-      String steps = dataFromPython.substring(idx+1);
+      String steps = dataFromPython.substring(0, idx);
+      String heart = dataFromPython.substring(idx+1);
       
       //print both on OLED!
       display.clearDisplay();
