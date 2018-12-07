@@ -15,7 +15,7 @@ from sklearn.mixture import GaussianMixture as GM
 
 # ==================== Globals ====================
 N = 128 # number of samples plotted
-#N = 32
+N4welch = 32
 NS = 10                                       # number of samples to read per iteration
 sample_count = 0                                # current sample count
 steps = 0 
@@ -160,8 +160,8 @@ def update_data(i): #i is needed for live plotting
     
     heart_beat = predict(filtered_vals[3], times, gmm_fit) #calculate heartbeat!!
 
-    samp4welch = N / (times[-1] - times[0])
-    freqs, pwr = sig.welch(filtered_vals[0] + filtered_vals[1] + filtered_vals[2], samp4welch, nperseg = N) 
+    samp4welch = N4welch / (times[-1] - times[0])
+    freqs, pwr = sig.welch(filtered_vals[0][-N4welch:-1] + filtered_vals[1][-N4welch:-1] + filtered_vals[2][-N4welch:-1], samp4welch, nperseg = N4welch) 
     idx = np.argmax(pwr)
     fmax = freqs [idx]
     f_steps = fmax * 2
@@ -169,8 +169,8 @@ def update_data(i): #i is needed for live plotting
         steps += f_steps * (times[-1] - times[-NS])
         
         if int(f_steps * (times[-1] - times[-NS])) != 0:
-	    finalString = str(steps) + "," + str(heart_beat)
-	    print(finalString)
+            finalString = str(steps) + "," + str(heart_beat)
+            print(finalString)
             ser.write(str(finalString).encode('utf-8'))
             print(int(steps))
             print (max(pwr))
@@ -179,11 +179,11 @@ def update_data(i): #i is needed for live plotting
     axes.set_xlim(times[0],times[N-1])
     live_plot.set_data(times, filtered_vals[3])
 
-    return #live_plot
+    return live_plot
 
 def train(data):
     gmm = GM(n_components = 2)
-    gmm_fit = gmm.fit((data.reshape(-1, 1))   
+    gmm_fit = gmm.fit((data.reshape(-1, 1)))
     return gmm_fit
 
 def predict(data, time, gmm_fit):
@@ -192,16 +192,20 @@ def predict(data, time, gmm_fit):
     return(heart_beat)
 
 def calculate_hr(time, pred_lbl):
+    global N
+    print ("len(time) = ", len(time))
     timeFinal = np.zeros(len(time))
     i = 0
-    while i < len(time):
+    while i < np.size(time) :
         count = 0
         index = i
-        while pred_lbl == 1:
+        while pred_lbl[i] == 1 and i<N: # N = 128
             count+=1
             i+=1
+            if (i == N):
+                break
                 
-        timeFinal[index] = count   
+        timeFinal[index] = count   #count here keeps track of the length of the label
         i+=1
     
     timeFinal[timeFinal < 7] = 0
@@ -212,8 +216,11 @@ def calculate_hr(time, pred_lbl):
     threeBeatAvg = [(j+i+k)/3 for i,j,k in zip(timeBetween[:-2], timeBetween[1:-1], timeBetween[2:])]
     threeBeatAvg = [i * 60 for i in threeBeatAvg]
 	
-    return(sum(threeBeatAvg) / float(len(threeBeatAvg)))
-
+    try:    
+        return (sum(threeBeatAvg) / float(len(threeBeatAvg)))
+    except:
+        return 0
+    
 def build_filters():
     global f_samp, f_lo, f_hi, order, filt_coeffs, filt_ICs
     Wlow = f_lo / (f_samp / 2)
@@ -259,8 +266,8 @@ if (__name__ == "__main__") :
         filtered_vals[1], filt_ICs[1] = process_ir(gyy, filt_coeffs, filt_ICs[1], 1)
         filtered_vals[2], filt_ICs[2] = process_ir(gyz, filt_coeffs, filt_ICs[2], 1)
         filtered_vals[3], filt_ICs[3] = process_ir(IR_Data, filt_coeffs, filt_ICs[3], 1)
-	
-	gmm_fit = train(filtered_vals[3]);
+        
+        gmm_fit = train(filtered_vals[3]);
         
         samp4welch = N / (times[-1] - times[0])
         freqs, pwr = sig.welch(filtered_vals[0] + filtered_vals[1] + filtered_vals[2], samp4welch, nperseg = N) 
