@@ -188,7 +188,11 @@ def update_data(i): #i is needed for live plotting
     idx = np.argmax(pwr)
     fmax = freqs [idx]
     f_steps = fmax * 2
-    if f_steps > 0.75 and f_steps < 4  and max(pwr) > 1e4:
+	
+    if heart_beat > 200 or heart_beat < 20:
+	ser.write(("q").encode('utf-8'))
+    
+    else if f_steps > 0.75 and f_steps < 4  and max(pwr) > 1e4:
         steps += f_steps * (times[-1] - times[-NS])
         
         if int(f_steps * (times[-1] - times[-NS])) != 0:
