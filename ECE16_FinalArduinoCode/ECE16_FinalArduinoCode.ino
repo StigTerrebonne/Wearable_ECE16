@@ -189,7 +189,21 @@ void awake (){
     
     //if all is good, then print heartbeat and steps 
     else {
-      printData(dataFromPython);
+      //split data for heart rate and step count
+      int idx = dataFromPython.indexOf(","); //index to split string
+      String heart = dataFromPython.substring(0, idx);
+      String steps = dataFromPython.substring(idx+1);
+      
+      //print both on OLED!
+      display.clearDisplay();
+      display.setTextSize(1);
+      display.setTextColor(WHITE);
+      display.setCursor(0,0);
+      display.print("Heart Rate: ");
+      display.println(heart);
+      display.print("Number of Steps: ");
+      display.println(steps);
+      display.display();
     } 
   }
 }
