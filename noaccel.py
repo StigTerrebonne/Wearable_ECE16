@@ -169,7 +169,9 @@ def update_data(i): #i is needed for live plotting
         steps += f_steps * (times[-1] - times[-NS])
         
         if int(f_steps * (times[-1] - times[-NS])) != 0:
-            ser.write(str(steps).encode('utf-8'))
+	    finalString = str(steps) + "," + str(heart_beat)
+	    print(finalString)
+            ser.write(str(finalString).encode('utf-8'))
             print(int(steps))
             print (max(pwr))
             print (f_steps)
@@ -269,7 +271,7 @@ if (__name__ == "__main__") :
         if f_steps > 0.5 and f_steps < 4  and max(pwr) > 1e4 :
             steps = f_steps * times[-1]
         print(int (steps))
-        ser.write((str(steps) ).encode ('utf-8')) #+ str(HR)
+        #ser.write((str(steps) ).encode ('utf-8')) #+ str(HR)
         
         fig, axes = plt.subplots()
 
