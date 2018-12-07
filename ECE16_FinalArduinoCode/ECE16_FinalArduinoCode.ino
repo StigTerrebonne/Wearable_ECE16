@@ -42,7 +42,7 @@ int16_t ax, ay, az, tp, gx, gy, gz;
 unsigned long int heartrate_val = 0; 
 
 //Sampling Variables 
-unsigned long int samplePeriod = 20000; // the target sample period, 5000 microseconds, 200Hz
+unsigned long int samplePeriod = 40000; // the target sample period, 5000 microseconds, 200Hz
 unsigned long int startTime = 0;
 unsigned long int elapsedTime = 0;
 unsigned long int currentTime = 0;
@@ -200,9 +200,9 @@ void awake (){
       display.setTextColor(WHITE);
       display.setCursor(0,0);
       display.print("Heart Rate: ");
-      display.println(heart);
+      display.println(heart.toInt());
       display.print("Number of Steps: ");
-      display.println(steps);
+      display.println(steps.toInt());
       display.display();
     } 
   }

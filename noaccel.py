@@ -19,7 +19,7 @@ N4welch = 32
 NS = 10                                       # number of samples to read per iteration
 sample_count = 0                                # current sample count
 steps = 0 
-f_samp = 50
+f_samp = 25
 f_hi = 0.1
 f_lo = 7
 order = 5
@@ -109,7 +109,7 @@ def grab_samples(n_samples) :
                 gy = gyroy[-1]
                 gz = gyroz[-1]
                 ir = irdata[-1]
-            continue
+        
         
         time[:-1] = time[1:]                  # shift and update our time/values arrays
         time[-1] = t
@@ -170,7 +170,6 @@ def update_data(i): #i is needed for live plotting
         
         if int(f_steps * (times[-1] - times[-NS])) != 0:
             finalString = str(steps) + "," + str(heart_beat)
-            print(finalString)
             ser.write(str(finalString).encode('utf-8'))
             print(int(steps))
             print (max(pwr))
@@ -193,7 +192,6 @@ def predict(data, time, gmm_fit):
 
 def calculate_hr(time, pred_lbl):
     global N
-    print ("len(time) = ", len(time))
     timeFinal = np.zeros(len(time))
     i = 0
     while i < np.size(time) :
