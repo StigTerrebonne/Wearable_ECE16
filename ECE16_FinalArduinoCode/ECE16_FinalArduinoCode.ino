@@ -175,11 +175,13 @@ void awake (){
   }
 
   if (BTserial.available() > 0) { 
+    
+      
     String dataFromPython =  BTserial.readStringUntil('\n');
     
     //check if heartbeat is too low or high - ring motor
     if (dataFromPython == "q") { //might need to change q
-      printData("Your heart beat is too High or Low!");
+      //printData("Your heart beat is too High or Low!");
       digitalWrite(motorPin, LOW); 
       delay(2000);
       digitalWrite(motorPin, HIGH);

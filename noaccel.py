@@ -16,8 +16,8 @@ from sklearn.mixture import GaussianMixture as GM
 
 # ==================== Globals ====================
 N = 128 # number of samples plotted
-N4welch = 32
-NS = 10                                       # number of samples to read per iteration
+N4welch = 128
+NS = 128                                       # number of samples to read per iteration
 sample_count = 0                                # current sample count
 steps = 0 
 f_samp = 25
@@ -61,7 +61,7 @@ def write_to_pyrebase(teamID, hr, steps):
     if (current_time - last_time >= 0.5):
         last_time = current_time
         data = {"teamID": teamID, "hr": hr, "steps": steps, "timestamp": current_time}
-	db.child("readings").push(data)
+        child("readings").push(data)
 
 def setup ():
     ser.write("AT+IMME1".encode('utf-8'))
@@ -115,48 +115,52 @@ def grab_samples(n_samples) :
             gy = float(gy)
             gz = float(gz)
             ir = float(ir)
+            
+            time[:-1] = time[1:]                  # shift and update our time/values arrays
+            time[-1] = t
+            
+            
+            gyrox[:-1] = gyrox[1:]
+            gyrox[-1] = gx
+            
+            gyroy[:-1] = gyroy[1:]
+            gyroy[-1] = gy
+            
+            gyroz[:-1] = gyroz[1:]
+            gyroz[-1] = gz
+            
+            irdata[:-1] = irdata[1:]
+            irdata[-1] = ir
+            
+            i += 1
+
         except :                               # report error if we failed
             print('Invalid data: ', data)
-            if i == 0:
-                t = times[-1] + 1/f_samp* 1000 #fill in missing time slot
-            #copy past values over to help avoid errors
-                
-                gx = gyx[-1]
-                gy = gyy[-1]
-                gz = gyz[-1]
-                ir = IR_Data[-1]
-            else:
-                t = time[-1] + 1/f_samp* 1000 #fill in missing time slot
-                #copy past values over to help avoid errors
-                gx = gyrox[-1]
-                gy = gyroy[-1]
-                gz = gyroz[-1]
-                ir = irdata[-1]
+# =============================================================================
+#             if i == 0:
+#                 t = times[-1] + 1/f_samp* 1000 #fill in missing time slot
+#             #copy past values over to help avoid errors
+#                 
+#                 gx = gyx[-1]
+#                 gy = gyy[-1]
+#                 gz = gyz[-1]
+#                 ir = IR_Data[-1]
+#             else:
+#                 t = time[-1] + 1/f_samp* 1000 #fill in missing time slot
+#                 #copy past values over to help avoid errors
+#                 gx = gyrox[-1]
+#                 gy = gyroy[-1]
+#                 gz = gyroz[-1]
+#                 ir = irdata[-1]
+# =============================================================================
         
         
-        time[:-1] = time[1:]                  # shift and update our time/values arrays
-        time[-1] = t
         
-        
-        gyrox[:-1] = gyrox[1:]
-        gyrox[-1] = gx
-        
-        gyroy[:-1] = gyroy[1:]
-        gyroy[-1] = gy
-        
-        gyroz[:-1] = gyroz[1:]
-        gyroz[-1] = gz
-        
-        irdata[:-1] = irdata[1:]
-        irdata[-1] = ir
-        
-        i += 1
-
     sample_count += n_samples
     return time, gyrox, gyroy, gyroz, irdata
     
 # ==================== Grab new samples and plot ====================
-def update_data(i): #i is needed for live plotting
+def update_data(): #i is needed for live plotting
     global times, gyx, gyy, gyz, IR_Data, filtered_vals, filt_ICs, steps
     
 
@@ -190,9 +194,9 @@ def update_data(i): #i is needed for live plotting
     f_steps = fmax * 2
 	
     if heart_beat > 200 or heart_beat < 20:
-	ser.write(("q").encode('utf-8'))
+        ser.write(("q").encode('utf-8'))
     
-    else if f_steps > 0.75 and f_steps < 4  and max(pwr) > 1e4:
+    elif f_steps > 0.75 and f_steps < 4  and max(pwr) > 1e4:
         steps += f_steps * (times[-1] - times[-NS])
         
         if int(f_steps * (times[-1] - times[-NS])) != 0:
@@ -202,12 +206,14 @@ def update_data(i): #i is needed for live plotting
             print (max(pwr))
             print (f_steps)
             
-    axes.set_xlim(times[0],times[N-1])
-    live_plot.set_data(times, filtered_vals[3])
+# =============================================================================
+#     axes.set_xlim(times[0],times[N-1])
+#     live_plot.set_data(times, filtered_vals[3])
+# =============================================================================
 
-    write_to_pyrebase("CarneAsadaFries", heart_beat, steps):	
+    #write_to_pyrebase("CarneAsadaFries", heart_beat, steps):	
 	
-    return live_plot
+    return #live_plot
 
 def train(data):
     gmm = GM(n_components = 2)
@@ -307,16 +313,15 @@ if (__name__ == "__main__") :
         print(int (steps))
         #ser.write((str(steps) ).encode ('utf-8')) #+ str(HR)
         
-        fig, axes = plt.subplots()
-
-        live_plot = axes.plot(times, filtered_vals[3], lw=2)[0]
-        
-        anim = animation.FuncAnimation(fig, update_data, interval=1000)
-        plt.show()
+# =============================================================================
+#         fig, axes = plt.subplots()
+# 
+#         live_plot = axes.plot(times, filtered_vals[3], lw=2)[0]
+#         
+#         anim = animation.FuncAnimation(fig, update_data, interval=1000)
+#         plt.show()
+# =============================================================================
          
-# =============================================================================
-#         while (True): 
-#             update_data()
-#             
-# =============================================================================
-
+        while (True): 
+            update_data()
+            
