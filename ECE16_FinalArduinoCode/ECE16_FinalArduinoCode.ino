@@ -39,7 +39,10 @@ String s; //String to Clear Buffer
 int16_t ax, ay, az, tp, gx, gy, gz;
 
 //Variable for heartrate
-unsigned long int heartrate_val = 0; 
+unsigned long int heartrate_val = 0;
+
+//motorStart time value
+unsigned long int motorStart = 0;
 
 //Sampling Variables 
 unsigned long int samplePeriod = 40000; // the target sample period, 5000 microseconds, 200Hz
@@ -55,12 +58,17 @@ void interruptPinISR() {
   ipinReady = true;
 }
 
-void printData(String buf) { 
+void printData(String heart, String steps, String warning) { 
   display.clearDisplay();
   display.setTextSize(1);
   display.setTextColor(WHITE);
   display.setCursor(0,0);
-  display.println(buf);
+  display.print("Heart Rate: ");
+  display.println(heart.toInt());
+  display.print("Number of Steps: ");
+  display.println(steps.toInt());
+  display.print("WARNING: ");
+  display.println(warning);
   display.display();
 }
 
@@ -110,12 +118,6 @@ void pollData() {
 void sendData() {
   BTserial.print(elapsedTime);
   BTserial.print(' ');
-//  BTserial.print(ax);
-//  BTserial.print(' ');
-//  BTserial.print(ay);
-//  BTserial.print(' ');
-//  BTserial.print(az);
-//  BTserial.print(' ');
   BTserial.print(gx);
   BTserial.print(' ');
   BTserial.print(gy);
@@ -124,7 +126,6 @@ void sendData() {
   BTserial.print(' ');
   BTserial.print(heartrate_val);
   BTserial.println(' ');
-  //BTserial.print(',');
 
 }
 
@@ -174,17 +175,28 @@ void awake (){
     newRead = false;
   }
 
-  if (BTserial.available() > 0) { 
+  if (BTserial.available() > 0) {  
     
-      
     String dataFromPython =  BTserial.readStringUntil('\n');
     
-    //check if heartbeat is too low or high - ring motor
-    if (dataFromPython == "q") { //might need to change q
-      //printData("Your heart beat is too High or Low!");
+    //check if heartbeat is too high - ring motor
+    if (dataFromPython == "h") {
+      motorStart = millis()
+      printData(heart, steps, "Your heart beat is too High!");
       digitalWrite(motorPin, LOW); 
-      delay(2000);
-      digitalWrite(motorPin, HIGH);
+    }
+    //check if heartbeat is too low - ring motor
+    else if (dataFromPython == "l") { 
+      motorStart = millis()
+      printData(heart, steps, "Your heart beat is too Low!");
+      digitalWrite(motorPin, LOW); 
+    }
+    
+    //functionality that tells you to move
+    else if (dataFromPython == "b") {  
+      motorStart = millis()
+      printData(heart, steps, "Remember to Move!!");
+      digitalWrite(motorPin, LOW);    
     }
     
     //can add functionality here for our customizations 
@@ -251,13 +263,15 @@ While awake, send to the awake function, if button is pressed, send disconnect m
 to python, send sleep commands, and send to the "sleep" loop*/
 void loop(){
 
-  buttonstate = digitalRead(button); 
+  buttonstate = digitalRead(button); // check button state
   if (buttonstate == HIGH){    
       last_buttonstate = HIGH;
       awake();
   }
+  if ((millis() - motorStart) > 2000) // Stop motor statement 
+      digitalWrite(motorPin, HIGH);
 
-  else if (buttonstate == LOW &&  last_buttonstate == HIGH) {
+  else if (buttonstate == LOW &&  last_buttonstate == HIGH) { //initialize Bluetooth 
         last_buttonstate = LOW;
         in_sleep = 1;
         BTserial.print(-2);
