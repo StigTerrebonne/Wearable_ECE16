@@ -34,6 +34,8 @@ const int interruptPin = 2;
 volatile bool ipinReady = false;
 
 String s; //String to Clear Buffer
+String heart; 
+String steps;
 
 //IMU Variables
 int16_t ax, ay, az, tp, gx, gy, gz;
@@ -181,22 +183,26 @@ void awake (){
     
     //check if heartbeat is too high - ring motor
     if (dataFromPython == "h") {
-      motorStart = millis()
+      motorStart = millis();
       printData(heart, steps, "Your heart beat is too High!");
-      digitalWrite(motorPin, LOW); 
+      digitalWrite(motorPin, HIGH); 
+      
+      
     }
     //check if heartbeat is too low - ring motor
     else if (dataFromPython == "l") { 
-      motorStart = millis()
+      motorStart = millis();
       printData(heart, steps, "Your heart beat is too Low!");
-      digitalWrite(motorPin, LOW); 
+      digitalWrite(motorPin, HIGH); 
+      
     }
     
     //functionality that tells you to move
     else if (dataFromPython == "b") {  
-      motorStart = millis()
+      motorStart = millis();
       printData(heart, steps, "Remember to Move!!");
-      digitalWrite(motorPin, LOW);    
+      digitalWrite(motorPin, HIGH); 
+        
     }
     
     //can add functionality here for our customizations 
@@ -205,8 +211,9 @@ void awake (){
     else {
       //split data for heart rate and step count
       int idx = dataFromPython.indexOf(","); //index to split string
-      String steps = dataFromPython.substring(0, idx);
-      String heart = dataFromPython.substring(idx+1);
+      Serial.println(dataFromPython);
+      steps = dataFromPython.substring(0, idx);
+      heart = dataFromPython.substring(idx+1);
       
       //print both on OLED!
       display.clearDisplay();
@@ -228,8 +235,7 @@ void setup(){
   
   //Initialize Motor Pin
   pinMode(motorPin, OUTPUT);
-  digitalWrite(motorPin, HIGH); 
-
+  digitalWrite(motorPin, LOW);
   // Intialize the IMU and the DMP ont he IMU
   IMU.initialize();
   IMU.dmpInitialize();
@@ -246,8 +252,8 @@ void setup(){
   Wire.write(0);     // set to zero (wakes up the MPU-6050)
   Wire.endTransmission(true);
   
-  //Serial.begin(9600);  
-  //while (!Serial);
+  Serial.begin(9600);  
+  while (!Serial);
   BTserial.begin(9600); 
   // Set the timer interrupt
   startTime = micros();
@@ -262,14 +268,15 @@ this main loop is meant to poll the button while the wearable is in the awake st
 While awake, send to the awake function, if button is pressed, send disconnect message
 to python, send sleep commands, and send to the "sleep" loop*/
 void loop(){
+   if ((millis() - motorStart) > 2000) // Stop motor statement 
+      digitalWrite(motorPin, LOW);
 
   buttonstate = digitalRead(button); // check button state
   if (buttonstate == HIGH){    
       last_buttonstate = HIGH;
       awake();
   }
-  if ((millis() - motorStart) > 2000) // Stop motor statement 
-      digitalWrite(motorPin, HIGH);
+ 
 
   else if (buttonstate == LOW &&  last_buttonstate == HIGH) { //initialize Bluetooth 
         last_buttonstate = LOW;
