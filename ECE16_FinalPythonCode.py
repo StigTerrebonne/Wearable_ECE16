@@ -9,18 +9,18 @@ import numpy as np
 import scipy.signal as sig
 from filtering4 import process_ir
 import time
-#from scipy import signal as sig
-#import scipy.stats as stats
 from sklearn.mixture import GaussianMixture as GM
 from matplotlib import pyplot as plt
-#from matplotlib import animation
+
 
 # ==================== Globals ====================
-N = 128                                         # number of samples plotted
+N = 128                                      # number of samples plotted
 NS = 16                                      # number of samples to read per iteration
-NW = 32                                 #number to use to get past steps in welch
-sample_count = 0                                # current sample count
+NW = 32                                      #number to use to get past steps in welch
+sample_count = 0                             # current sample count
 steps = 0 
+past_steps = 0
+idle_counter = 0   #keeps track of how ong its been since the last step
 f_samp = 25
 f_hi = 0.1
 f_lo = 7
@@ -50,6 +50,9 @@ reg_size = 10
 length_info = np.zeros ((reg_size, 3)) #want length with start and stop index of last 5 vals
 length_info = length_info.astype(int)
 
+#================== functions ====================##
+
+#============== this
 def setup ():
     ser.write("AT+IMME1".encode('utf-8'))
     time.sleep(.5)
@@ -131,7 +134,7 @@ def grab_samples(n_samples) :
     
 # ==================== Grab new samples and plot ====================
 def update_data():
-    global times, gyx, gyy, gyz, filtered_vals, filt_ICs, steps, IR_Data
+    global times, gyx, gyy, gyz, filtered_vals, filt_ICs, steps, IR_Data, past_steps, idle_counter
     
 
     # shift samples left by 'NS'
@@ -158,8 +161,18 @@ def update_data():
     idx = np.argmax(pwr)
     fmax = freqs [idx]  # frequency wehere the largest power occurred
     f_steps = fmax * 2 #there are two steps that are taken in one full cycle 
+    
     if f_steps > 0.75 and f_steps < 4  and max(pwr) > 1e4:
         steps += f_steps * (times[-1] - times[-NS-1])
+        
+    if int(steps) == int(past_steps):
+        idle_counter +=1
+        if idle_counter == 10 and not int(steps) == 0:
+            ser.write("b".encode('utf-8'))
+    
+    else: idle_counter = 0
+    
+    past_steps = steps
         
      
 #    axes.set_xlim(times[0],times[N-1])
@@ -220,6 +233,10 @@ def calculate_hr():
             continue
 
     HR = 60 / np.median(time_diffs)
+    
+    if HR < 40: ser.write("l".encode('utf-8'))
+    elif HR> 120 : ser.write("h".encode('utf-8'))
+    
     return HR
 
 def one_to_zero(i):
